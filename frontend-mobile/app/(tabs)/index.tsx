@@ -1,98 +1,129 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import axios from "axios";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+} from "react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function Home() {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([
+    { id: "1", sender: "EmoBuddy", text: "Hi! How are you feeling today?" },
+  ]);
 
-export default function HomeScreen() {
+  const sendMessage = async () => {
+  if (!message.trim()) return;
+
+  const userMsg = {
+    id: Date.now().toString(),
+    sender: "You",
+    text: message,
+  };
+
+  setMessages(prev => [...prev, userMsg]);
+
+  try {
+    const response = await axios.post(
+      "http://192.168.29.30:5000/chat",
+      {
+        message,
+      }
+    );
+
+    const aiMsg = {
+      id: Date.now().toString() + "ai",
+      sender: "EmoBuddy",
+      text: response.data.reply,
+    };
+
+    setMessages(prev => [...prev, aiMsg]);
+
+  } catch (error) {
+    const aiMsg = {
+      id: Date.now().toString() + "error",
+      sender: "EmoBuddy",
+      text: "Cannot connect to backend",
+    };
+
+    setMessages(prev => [...prev, aiMsg]);
+  }
+
+  setMessage("");
+};
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <Text style={styles.header}>🧠 EmoBuddy</Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <FlatList
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <Text style={styles.message}>
+            <Text style={{ fontWeight: "bold" }}>
+              {item.sender}:
+            </Text>{" "}
+            {item.text}
+          </Text>
+        )}
+      />
+
+      <TextInput
+        value={message}
+        onChangeText={setMessage}
+        placeholder="Type a message..."
+        style={styles.input}
+      />
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={sendMessage}
+      >
+        <Text style={styles.buttonText}>Send</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#121212",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+
+  header: {
+    color: "white",
+    fontSize: 30,
+    marginTop: 50,
+    marginBottom: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  message: {
+    color: "white",
+    marginBottom: 10,
+  },
+
+  input: {
+    backgroundColor: "white",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+
+  button: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 10,
+  },
+
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
   },
 });
